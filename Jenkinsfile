@@ -9,7 +9,8 @@ pipeline {
         DOCKER_IMAGE_LATEST = "${APP_NAME}:latest"
         
         // Docker registry configuration (update these values)
-        DOCKER_REGISTRY = credentials('docker-registry-url') ?: 'your-registry.io'
+        // Set default registry URL or use credentials if available
+        DOCKER_REGISTRY = 'your-registry.io'
         DOCKER_REPOSITORY = "${DOCKER_REGISTRY}/${APP_NAME}"
         DOCKER_CREDENTIALS_ID = 'docker-registry-credentials'
         
@@ -18,7 +19,7 @@ pipeline {
     }
     
     tools {
-        jdk 'Java17'
+        jdk 'java17'
         maven 'Maven3'
     }
     
@@ -150,9 +151,22 @@ pipeline {
                 script {
                     echo "Pushing Docker image to registry..."
                     
+                    // Try to get registry URL from credentials, otherwise use default
+                    def registryUrl = env.DOCKER_REGISTRY
+                    try {
+                        def registryCredential = credentials('docker-registry-url')
+                        if (registryCredential) {
+                            registryUrl = registryCredential
+                        }
+                    } catch (Exception e) {
+                        echo "Using default registry URL: ${registryUrl}"
+                    }
+                    
+                    def repository = "${registryUrl}/${APP_NAME}"
+                    
                     // Tag images with registry prefix
-                    def taggedImage = "${DOCKER_REPOSITORY}:${APP_VERSION}"
-                    def taggedLatest = "${DOCKER_REPOSITORY}:latest"
+                    def taggedImage = "${repository}:${APP_VERSION}"
+                    def taggedLatest = "${repository}:latest"
                     
                     sh """
                         docker tag ${DOCKER_IMAGE} ${taggedImage}
@@ -166,7 +180,7 @@ pipeline {
                         passwordVariable: 'DOCKER_PASS'
                     )]) {
                         sh """
-                            echo \${DOCKER_PASS} | docker login ${DOCKER_REGISTRY} -u \${DOCKER_USER} --password-stdin
+                            echo \${DOCKER_PASS} | docker login ${registryUrl} -u \${DOCKER_USER} --password-stdin
                         """
                     }
                     
