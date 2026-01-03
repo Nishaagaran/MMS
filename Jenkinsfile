@@ -17,6 +17,11 @@ pipeline {
         MAVEN_OPTS = '-Xmx1024m -XX:MaxPermSize=256m'
     }
     
+    tools {
+        jdk 'Java17'
+        maven 'Maven3'
+    }
+    
     options {
         // Discard old builds
         buildDiscarder(logRotator(numToKeepStr: '10'))
