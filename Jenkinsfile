@@ -51,7 +51,7 @@ pipeline {
             steps {
                 script {
                     echo "Building Spring Boot application..."
-                    sh """
+                    bat """
                         mvn clean compile -B
                     """
                 }
@@ -71,7 +71,7 @@ pipeline {
             steps {
                 script {
                     echo "Running unit tests..."
-                    sh """
+                    bat """
                         mvn test -B
                     """
                 }
@@ -98,7 +98,7 @@ pipeline {
             steps {
                 script {
                     echo "Packaging application..."
-                    sh """
+                    bat """
                         mvn package -DskipTests -B
                     """
                 }
@@ -119,7 +119,7 @@ pipeline {
             steps {
                 script {
                     echo "Building Docker image: ${DOCKER_IMAGE}"
-                    sh """
+                    bat """
                         docker build -t ${DOCKER_IMAGE} -t ${DOCKER_IMAGE_LATEST} .
                     """
                 }
@@ -128,8 +128,8 @@ pipeline {
                 success {
                     echo "Docker image built successfully"
                     script {
-                        // List the built images
-                        sh "docker images | grep ${APP_NAME}"
+                        // List the built images (Windows compatible)
+                        bat "docker images | findstr ${APP_NAME}"
                     }
                 }
                 failure {
@@ -168,24 +168,24 @@ pipeline {
                     def taggedImage = "${repository}:${APP_VERSION}"
                     def taggedLatest = "${repository}:latest"
                     
-                    sh """
+                    bat """
                         docker tag ${DOCKER_IMAGE} ${taggedImage}
                         docker tag ${DOCKER_IMAGE_LATEST} ${taggedLatest}
                     """
                     
-                    // Login to Docker registry
+                    // Login to Docker registry (Windows compatible using PowerShell)
                     withCredentials([usernamePassword(
                         credentialsId: "${DOCKER_CREDENTIALS_ID}",
                         usernameVariable: 'DOCKER_USER',
                         passwordVariable: 'DOCKER_PASS'
                     )]) {
-                        sh """
-                            echo \${DOCKER_PASS} | docker login ${registryUrl} -u \${DOCKER_USER} --password-stdin
+                        powershell """
+                            \$env:DOCKER_PASS | docker login ${registryUrl} -u \$env:DOCKER_USER --password-stdin
                         """
                     }
                     
                     // Push images
-                    sh """
+                    bat """
                         docker push ${taggedImage}
                         docker push ${taggedLatest}
                     """
@@ -212,9 +212,9 @@ pipeline {
             script {
                 echo "Pipeline execution completed"
                 
-                // Clean up Docker images to save space
-                sh """
-                    docker image prune -f || true
+                // Clean up Docker images to save space (Windows compatible)
+                bat """
+                    docker image prune -f
                 """
             }
         }
