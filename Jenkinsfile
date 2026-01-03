@@ -14,8 +14,8 @@ pipeline {
         DOCKER_REPOSITORY = "${DOCKER_REGISTRY}/${APP_NAME}"
         DOCKER_CREDENTIALS_ID = 'docker-registry-credentials'
         
-        // Maven configuration
-        MAVEN_OPTS = '-Xmx1024m -XX:MaxPermSize=256m'
+        // Maven configuration (Java 17 compatible - MaxPermSize removed in Java 8+)
+        MAVEN_OPTS = '-Xmx1024m'
     }
     
     tools {
