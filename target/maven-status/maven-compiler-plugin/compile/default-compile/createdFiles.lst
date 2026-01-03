@@ -1,0 +1,8 @@
+com\mms\exception\GlobalExceptionHandler$ErrorResponse.class
+com\mms\MovieManagementSystemApplication.class
+com\mms\entity\Movie.class
+com\mms\repository\MovieRepository.class
+com\mms\service\MovieService.class
+com\mms\controller\MovieController.class
+com\mms\exception\MovieNotFoundException.class
+com\mms\exception\GlobalExceptionHandler.class

@@ -1,0 +1,4 @@
+-------------------------------------------------------------------------------
+Test set: com.mms.service.MovieServiceTest
+-------------------------------------------------------------------------------
+Tests run: 14, Failures: 0, Errors: 0, Skipped: 0, Time elapsed: 1.639 s -- in com.mms.service.MovieServiceTest
