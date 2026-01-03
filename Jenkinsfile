@@ -5,14 +5,6 @@ pipeline {
         // Application configuration
         APP_NAME = 'movie-management-system'
         APP_VERSION = "${env.BUILD_NUMBER}"
-        DOCKER_IMAGE = "${APP_NAME}:${APP_VERSION}"
-        DOCKER_IMAGE_LATEST = "${APP_NAME}:latest"
-        
-        // Docker registry configuration (update these values)
-        // Set default registry URL or use credentials if available
-        DOCKER_REGISTRY = 'your-registry.io'
-        DOCKER_REPOSITORY = "${DOCKER_REGISTRY}/${APP_NAME}"
-        DOCKER_CREDENTIALS_ID = 'docker-registry-credentials'
         
         // Maven configuration (Java 17 compatible - MaxPermSize removed in Java 8+)
         MAVEN_OPTS = '-Xmx1024m'
@@ -114,108 +106,12 @@ pipeline {
                 }
             }
         }
-        
-        stage('Docker Build') {
-            steps {
-                script {
-                    echo "Building Docker image: ${DOCKER_IMAGE}"
-                    bat """
-                        docker build -t ${DOCKER_IMAGE} -t ${DOCKER_IMAGE_LATEST} .
-                    """
-                }
-            }
-            post {
-                success {
-                    echo "Docker image built successfully"
-                    script {
-                        // List the built images (Windows compatible)
-                        bat "docker images | findstr ${APP_NAME}"
-                    }
-                }
-                failure {
-                    echo "Docker build failed"
-                    error("Docker build failed")
-                }
-            }
-        }
-        
-        stage('Docker Push') {
-            when {
-                anyOf {
-                    branch 'main'
-                    branch 'master'
-                    branch 'develop'
-                }
-            }
-            steps {
-                script {
-                    echo "Pushing Docker image to registry..."
-                    
-                    // Try to get registry URL from credentials, otherwise use default
-                    def registryUrl = env.DOCKER_REGISTRY
-                    try {
-                        def registryCredential = credentials('docker-registry-url')
-                        if (registryCredential) {
-                            registryUrl = registryCredential
-                        }
-                    } catch (Exception e) {
-                        echo "Using default registry URL: ${registryUrl}"
-                    }
-                    
-                    def repository = "${registryUrl}/${APP_NAME}"
-                    
-                    // Tag images with registry prefix
-                    def taggedImage = "${repository}:${APP_VERSION}"
-                    def taggedLatest = "${repository}:latest"
-                    
-                    bat """
-                        docker tag ${DOCKER_IMAGE} ${taggedImage}
-                        docker tag ${DOCKER_IMAGE_LATEST} ${taggedLatest}
-                    """
-                    
-                    // Login to Docker registry (Windows compatible using PowerShell)
-                    withCredentials([usernamePassword(
-                        credentialsId: "${DOCKER_CREDENTIALS_ID}",
-                        usernameVariable: 'DOCKER_USER',
-                        passwordVariable: 'DOCKER_PASS'
-                    )]) {
-                        powershell """
-                            \$env:DOCKER_PASS | docker login ${registryUrl} -u \$env:DOCKER_USER --password-stdin
-                        """
-                    }
-                    
-                    // Push images
-                    bat """
-                        docker push ${taggedImage}
-                        docker push ${taggedLatest}
-                    """
-                    
-                    echo "Docker images pushed successfully:"
-                    echo "  - ${taggedImage}"
-                    echo "  - ${taggedLatest}"
-                }
-            }
-            post {
-                success {
-                    echo "Docker images pushed successfully to registry"
-                }
-                failure {
-                    echo "Docker push failed"
-                    error("Docker push failed")
-                }
-            }
-        }
     }
     
     post {
         always {
             script {
                 echo "Pipeline execution completed"
-                
-                // Clean up Docker images to save space (Windows compatible)
-                bat """
-                    docker image prune -f
-                """
             }
         }
         success {
